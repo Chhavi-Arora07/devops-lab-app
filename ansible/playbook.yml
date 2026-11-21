@@ -1,0 +1,23 @@
+---
+- name: Configure web server
+  hosts: webservers
+  become: true
+  vars:
+    site_title: "Configured by Ansible"
+  tasks:
+    - name: Install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Deploy web page from template
+      ansible.builtin.template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+        mode: "0644"
+      notify: Restart nginx
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.command: service nginx restart
