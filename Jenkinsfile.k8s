@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    triggers { pollSCM('H/2 * * * *') }
+    environment {
+        KUBECONFIG = '/var/jenkins_home/.kube/config'
+    }
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f k8s/deployment.yaml'
+                sh 'kubectl apply -f k8s/service.yaml'
+                sh 'kubectl rollout status deployment/flask-deploy --timeout=120s'
+            }
+        }
+        stage('Verify') {
+            steps {
+                sh 'kubectl get pods -o wide'
+                sh 'kubectl get services'
+            }
+        }
+    }
+    post {
+        success { echo 'Manifests applied to Kubernetes successfully' }
+        failure { echo 'Deployment failed, check the console output' }
+    }
+}
