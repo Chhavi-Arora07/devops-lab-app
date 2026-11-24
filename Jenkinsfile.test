@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+        stage('Build') {
+            steps { sh 'docker build -t devops-lab-app:test .' }
+        }
+        stage('Unit Tests') {
+            steps { sh 'docker run --rm devops-lab-app:test python -m pytest test_unit.py -v' }
+        }
+        stage('Integration Tests') {
+            steps { sh 'docker run --rm devops-lab-app:test python -m pytest test_integration.py -v' }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'docker rm -f app-lab4 || true'
+                sh 'docker run -d --name app-lab4 -p 5020:5000 devops-lab-app:test'
+            }
+        }
+    }
+    post {
+        success { echo 'All tests passed, app deployed on port 5020' }
+        failure { echo 'Tests failed: deployment blocked' }
+    }
+}
